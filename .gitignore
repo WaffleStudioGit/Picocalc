@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+*.uf2
+!firmware/flash_nuke.uf2
+firmware/dist/
+tmp/
+.venv/
+*.egg-info/
+.DS_Store
+build/
