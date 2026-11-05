@@ -65,17 +65,17 @@ class vt(uio.IOBase):
 
     def _care_tick(self):
         try:
-            import burnin
+            import care
 
-            burnin.tick()
+            care.tick()
         except ImportError:
             pass
 
     def _care_input(self):
         try:
-            import burnin
+            import care
 
-            burnin.note_input()
+            care.note_input()
         except ImportError:
             pass
 

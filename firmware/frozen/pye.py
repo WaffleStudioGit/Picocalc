@@ -302,17 +302,17 @@ class Editor:
                 return KEY_NONE, in_buffer
     def _burnin_chrome_visible(self):
         try:
-            import burnin
+            import care
 
-            return burnin.chrome_visible()
+            return care.chrome_visible()
         except ImportError:
             return True
 
     def _burnin_shift(self):
         try:
-            import burnin
+            import care
 
-            return burnin.pixel_shift()
+            return care.pixel_shift()
         except ImportError:
             return 0
 
