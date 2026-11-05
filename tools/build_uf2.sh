@@ -20,3 +20,7 @@ docker run --rm \
 
 echo "UF2 + fs stub written to firmware/dist/"
 ls -la "$ROOT/firmware/dist/"
+# Stage copies into the uf2loader SD card folders
+if [[ -x "$ROOT/tools/pack_sdcard.sh" ]]; then
+  "$ROOT/tools/pack_sdcard.sh" || true
+fi
