@@ -108,7 +108,69 @@ class ADC:
         cls.registry.clear()
 
 
+class I2C:
+    registry = []
+
+    def __init__(self, id=0, sda=None, scl=None, freq=100000):
+        self.id = id
+        self.sda = sda
+        self.scl = scl
+        self.freq = freq
+        self._mem = {}
+        I2C.registry.append(self)
+
+    def scan(self):
+        return list(self._mem.keys())
+
+    def writeto(self, addr, buf, stop=True):
+        self._mem.setdefault(addr, b"")
+        return len(buf)
+
+    def readfrom(self, addr, nbytes, stop=True):
+        return bytes(nbytes)
+
+    def writeto_mem(self, addr, memaddr, buf, addrsize=8):
+        self._mem[(addr, memaddr)] = bytes(buf)
+        return len(buf)
+
+    def readfrom_mem(self, addr, memaddr, nbytes, addrsize=8):
+        data = self._mem.get((addr, memaddr), bytes(nbytes))
+        return data[:nbytes]
+
+
+class UART:
+    registry = []
+
+    def __init__(self, id=0, baudrate=115200, tx=None, rx=None, **kw):
+        self.id = id
+        self.baudrate = baudrate
+        self.tx = tx
+        self.rx = rx
+        self.buf = bytearray()
+        UART.registry.append(self)
+
+    def write(self, data):
+        if isinstance(data, str):
+            data = data.encode()
+        self.buf.extend(data)
+        return len(data)
+
+    def read(self, nbytes=-1):
+        if nbytes < 0:
+            out = bytes(self.buf)
+            self.buf = bytearray()
+            return out
+        out = bytes(self.buf[:nbytes])
+        self.buf = self.buf[nbytes:]
+        return out
+
+    def any(self):
+        return len(self.buf)
+
+
 def reset_all():
     Pin.reset_registry()
     PWM.reset_registry()
     ADC.reset_registry()
+    I2C.registry.clear()
+    UART.registry.clear()

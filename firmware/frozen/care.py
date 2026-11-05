@@ -1,4 +1,4 @@
-"""Display care: Gruvbox LUT, idle auto-off, chrome hide, 1-col shift."""
+"""Display care: Gruvbox + aggressive anti burn-in. Optional /sd/uf2_care.json."""
 
 try:
     import array
@@ -6,11 +6,17 @@ try:
 except ImportError:
     array = time = None
 
-# Idle (ms)
-_DIM_MS, _OFF_MS, _DIM = 90_000, 180_000, 8
-# Long-session chrome / shift
-_CHROME_AFTER, _CHROME_PERIOD, _CHROME_HIDE = 600_000, 90_000, 45_000
-_SHIFT_MS = 300_000
+# Aggressive defaults (ms) — override via load_config()
+_DIM_MS = 30_000
+_OFF_MS = 60_000
+_DIM = 4
+_CHROME_AFTER = 60_000  # hide status quickly
+_CHROME_PERIOD = 60_000
+_CHROME_HIDE = 50_000  # mostly hidden once session is long
+_SHIFT_MS = 120_000  # shift every 2 min
+_AUTOSAVE_MS = 300_000  # 5 min (feature #2)
+
+_CFG_PATHS = ("/sd/uf2_care.json", "uf2_care.json", "/uf2_care.json")
 
 _GRUV16 = (
     (40, 40, 40),
@@ -57,9 +63,68 @@ def apply_gruvbox(display=None):
     disp = display or (getattr(picocalc, "display", None) if picocalc else None)
     if not disp or not hasattr(disp, "setLUT") or array is None:
         return False
-    lut = array.array("H", (_rgb565(*c) for c in _GRUV16))
-    disp.setLUT(lut)
+    disp.setLUT(array.array("H", (_rgb565(*c) for c in _GRUV16)))
     return True
+
+
+def _read_json(path):
+    try:
+        import ujson as json
+    except ImportError:
+        import json
+    with open(path) as f:
+        return json.load(f)
+
+
+def load_config(path=None):
+    """Load care timings from JSON. Keys match module knobs without _ prefix casing."""
+    global _DIM_MS, _OFF_MS, _DIM, _CHROME_AFTER, _CHROME_PERIOD
+    global _CHROME_HIDE, _SHIFT_MS, _AUTOSAVE_MS
+    paths = (path,) if path else _CFG_PATHS
+    data = None
+    used = None
+    for p in paths:
+        if not p:
+            continue
+        try:
+            data = _read_json(p)
+            used = p
+            break
+        except Exception:
+            continue
+    if not data:
+        return None
+    def g(*keys, default=None):
+        for k in keys:
+            if k in data:
+                return data[k]
+        return default
+
+    _DIM_MS = int(g("dim_ms", "idle_dim_ms", default=_DIM_MS))
+    _OFF_MS = int(g("off_ms", "idle_off_ms", default=_OFF_MS))
+    _DIM = int(g("dim_level", default=_DIM))
+    _CHROME_AFTER = int(g("chrome_after_ms", default=_CHROME_AFTER))
+    _CHROME_PERIOD = int(g("chrome_period_ms", default=_CHROME_PERIOD))
+    _CHROME_HIDE = int(g("chrome_hide_ms", default=_CHROME_HIDE))
+    _SHIFT_MS = int(g("shift_ms", default=_SHIFT_MS))
+    _AUTOSAVE_MS = int(g("autosave_ms", default=_AUTOSAVE_MS))
+    if "enabled" in data:
+        care.enabled = bool(data["enabled"])
+    return used
+
+
+def settings():
+    return {
+        "dim_ms": _DIM_MS,
+        "off_ms": _OFF_MS,
+        "dim_level": _DIM,
+        "chrome_after_ms": _CHROME_AFTER,
+        "chrome_period_ms": _CHROME_PERIOD,
+        "chrome_hide_ms": _CHROME_HIDE,
+        "shift_ms": _SHIFT_MS,
+        "autosave_ms": _AUTOSAVE_MS,
+        "enabled": care.enabled,
+    }
 
 
 class Care:
@@ -86,12 +151,18 @@ class Care:
         age = _diff(_ticks(), self.session_start)
         if age < _CHROME_AFTER:
             return True
+        # Prefer hidden: only show briefly each period
         return (age % _CHROME_PERIOD) >= _CHROME_HIDE
 
     def pixel_shift(self):
-        if not self.enabled:
+        if not self.enabled or _SHIFT_MS <= 0:
             return 0
         return (_diff(_ticks(), self.session_start) // _SHIFT_MS) % 2
+
+    def autosave_due(self, last_save_ticks):
+        if _AUTOSAVE_MS <= 0:
+            return False
+        return _diff(_ticks(), last_save_ticks) >= _AUTOSAVE_MS
 
     def _backlight(self, level):
         kb = self._kb
@@ -142,3 +213,7 @@ def chrome_visible():
 
 def pixel_shift():
     return care.pixel_shift()
+
+
+def autosave_ms():
+    return _AUTOSAVE_MS

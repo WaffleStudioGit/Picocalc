@@ -14,6 +14,7 @@ REQUIRED = {
     "gpio_hw.py",
     "uf2_shell.py",
     "care.py",
+    "errjump.py",
     "highlighter.py",
     "default_style.py",
     "pye.py",
