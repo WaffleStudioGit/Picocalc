@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Write an HTML preview of UFO syntax highlighting for docs/screenshots."""
+"""Write an HTML preview of UF2 Gruvbox syntax highlighting for docs/screenshots."""
 import html
 import os
 import re
@@ -25,17 +25,14 @@ print(list_pins())
 sweep(21)
 """
 
-# Map a few SGR codes used in default_style to CSS colors (dark editor theme)
+# Gruvbox dark approximations of the VT SGR colors we use
 _SGR_CSS = {
-    "\x1b[37;44m": "color:#e8e8e8;background:#1e3a8a",
-    "\x1b[37;45m": "color:#e8e8e8;background:#7e22ce",
-    "\x1b[37;46m": "color:#0b1020;background:#22d3ee",
-    "\x1b[36m": "color:#22d3ee",
-    "\x1b[31m": "color:#f87171",
-    "\x1b[35m": "color:#e879f9",
-    "\x1b[32m": "color:#4ade80",
-    "\x1b[33m": "color:#fbbf24",
-    "\x1b[34m": "color:#60a5fa",
+    "\x1b[36m": "color:#8ec07c",  # aqua
+    "\x1b[31m": "color:#fb4934",  # red
+    "\x1b[35m": "color:#d3869b",  # purple
+    "\x1b[32m": "color:#b8bb26",  # green
+    "\x1b[33m": "color:#fabd2f",  # yellow
+    "\x1b[34m": "color:#83a598",  # blue
 }
 
 
@@ -77,23 +74,22 @@ def main():
         )
     doc = f"""<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"/>
-<title>PicoCalc UF2 — Python editor syntax highlighting</title>
+<title>PicoCalc UF2 — Gruvbox editor</title>
 <style>
-  body {{ margin:0; background:#0b1020; color:#d6d6d6;
+  body {{ margin:0; background:#1d2021; color:#ebdbb2;
          font: 15px/1.55 "IBM Plex Mono", "Cascadia Code", ui-monospace, monospace; }}
   .wrap {{ max-width: 820px; margin: 2rem auto; padding: 0 1rem; }}
-  h1 {{ font: 600 1.4rem/1.2 "IBM Plex Sans", system-ui, sans-serif; color:#f8fafc; }}
-  p {{ font: 14px/1.4 "IBM Plex Sans", system-ui, sans-serif; color:#94a3b8; }}
-  .editor {{ background:#111827; border:1px solid #1f2937; border-radius:8px;
-             padding:1rem 0.75rem; box-shadow: 0 20px 50px rgba(0,0,0,.45); }}
+  h1 {{ font: 600 1.35rem/1.2 "IBM Plex Sans", system-ui, sans-serif; color:#fbf1c7; }}
+  p {{ font: 14px/1.4 "IBM Plex Sans", system-ui, sans-serif; color:#a89984; }}
+  .editor {{ background:#282828; border:1px solid #3c3836; border-radius:6px;
+             padding:1rem 0.75rem; }}
   .line {{ white-space: pre; }}
-  .ln {{ display:inline-block; width:3ch; color:#4b5563; margin-right:1ch; user-select:none; }}
-  .badge {{ display:inline-block; margin-top:1rem; padding:.25rem .6rem; border:1px solid #334155;
-            color:#93c5fd; border-radius:4px; font-size:12px; }}
+  .ln {{ display:inline-block; width:3ch; color:#665c54; margin-right:1ch; user-select:none; }}
+  .badge {{ display:inline-block; margin-top:1rem; padding:.25rem .6rem; border:1px solid #504945;
+            color:#83a598; border-radius:4px; font-size:12px; }}
 </style></head><body><div class="wrap">
-<h1>PicoCalc UF2 firmware — on-device Python editor</h1>
-<p>Syntax highlighting for keywords, strings, comments, numbers, and builtins.
-Control servos and GPIO from the same editor via <code>gpio_hw</code>.</p>
+<h1>PicoCalc UF2 — Gruvbox Python editor</h1>
+<p>Foreground-only syntax colors, auto-off on idle, status chrome hides on long sessions.</p>
 <div class="editor">
 {''.join(rows)}
 </div>

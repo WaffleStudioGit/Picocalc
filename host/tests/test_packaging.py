@@ -17,6 +17,8 @@ REQUIRED_FROZEN = {
     "uf2_shell.py",
     "highlighter.py",
     "default_style.py",
+    "theme.py",
+    "burnin.py",
     "pye.py",
     "picocalc.py",
     "vt.py",
@@ -39,9 +41,24 @@ class PackagingTests(unittest.TestCase):
         self.assertTrue((ROOT / "firmware" / "Dockerfile").is_file())
 
     def test_tools_executable_scripts_exist(self):
-        for name in ("build_uf2.sh", "pack_filesystem.sh", "run_tests.sh"):
+        for name in (
+            "build_uf2.sh",
+            "pack_filesystem.sh",
+            "pack_sdcard.sh",
+            "run_tests.sh",
+        ):
             path = ROOT / "tools" / name
             self.assertTrue(path.is_file(), name)
+
+    def test_sdcard_launcher_tree(self):
+        sd = ROOT / "sdcard"
+        self.assertTrue((sd / "README.md").is_file())
+        self.assertTrue((sd / "pico1-apps").is_dir())
+        self.assertTrue((sd / "pico2-apps").is_dir())
+        readme = (sd / "README.md").read_text(encoding="utf-8")
+        self.assertIn("pico1-apps", readme)
+        self.assertIn("pico2-apps", readme)
+        self.assertIn("PicoCalc_Python", readme)
 
     def test_main_starts_uf2_shell(self):
         src = (FROZEN / "main.py").read_text(encoding="utf-8")

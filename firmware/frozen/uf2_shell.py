@@ -33,30 +33,11 @@ except ImportError:
 
 autoreset(True)
 
-BANNER = r"""
-  ____  _           ____      _         _   _ _____ ____
- |  _ \(_) ___ ___ / ___|__ _| | ___   | | | |  ___/ ___|
- | |_) | |/ __/ _ \ |   / _` | |/ __|  | | | | |_  |___ \
- |  __/| | (_| (_) | |__| (_| | | (__  | |_| |  _|  ___) |
- |_|   |_|\___\___/ \____\__,_|_|\___|  \___/|_|   |____/
-"""
-
 HELP = """
-UF2 shell commands
-  help                 this text
-  pins                 show safe GPIO header pins
-  edit [path]          open Python editor (syntax highlighting on)
-  new [path]           create/edit a new script (default /apps/untitled.py)
-  run <path>           execute a .py file
-  ls [path]            list files
-  cat <path>           print a file
-  cd <path>            change directory
-  pwd                  print working directory
-  mem                  memory info
-  repl                 drop to raw Python REPL (Ctrl-D to return if hosted)
-  servo <pin> <angle>  quick servo move (e.g. servo 21 90)
-  high <pin> / low <pin>
-  quit                 leave the shell (keeps REPL alive)
+UF2 shell
+  help | pins | edit [path] | new [path] | run <path>
+  ls | cat | cd | pwd | mem | servo <pin> <deg> | high/low <pin>
+  repl / quit
 """
 
 
@@ -195,9 +176,9 @@ def cmd_mem():
 
 
 def _print_banner():
-    print(Fore.CYAN + BANNER + Style.RESET_ALL)
-    print(Fore.YELLOW + "PicoCalc UF2 — on-device Python" + Style.RESET_ALL)
-    print("Type 'help' for commands, 'edit' for the Python editor.\n")
+    # Keep boot chrome minimal (less static UI for the panel).
+    print(Fore.YELLOW + "PicoCalc UF2" + Style.RESET_ALL + " — edit / run / gpio")
+    print("help · auto-off on idle · status bar hides on long sessions\n")
 
 
 def handle_line(line, state):

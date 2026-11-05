@@ -29,9 +29,27 @@ Covers:
 
 Only flash after this is green.
 
-## Flash (UF2)
+## Theme & anti burn-in
 
-1. Hold **BOOTSEL** on the Pico module, plug USB, copy the matching UF2:
+- **Gruvbox dark** LUT + foreground-only syntax colors (no neon keyword blocks)
+- **Auto dim → off** after idle (default ~1.5 min / 3 min); any key wakes
+- **Status bar hides** for stretches during long edit sessions
+- Occasional **1-column content shift** so edges do not stick on the same pixels
+
+Tune at the REPL: `burnin.care.configure(idle_off_ms=120000)`
+
+## Flash / SD launcher (UF2)
+
+### A) PicoCalc SD uf2loader (recommended)
+
+```bash
+./tools/build_uf2.sh RPI_PICO2    # Docker
+./tools/pack_sdcard.sh            # → sdcard/pico1-apps or pico2-apps
+```
+
+Copy `sdcard/pico1-apps` or `sdcard/pico2-apps` onto the MicroSD (keep `BOOT2040.UF2` / `BOOT2350.UF2` on the SD root from [uf2loader](https://github.com/pelrun/uf2loader)). Power on holding **F1**, select **PicoCalc_Python**.
+
+### B) Direct BOOTSEL flash
 
 | Board | Artifact |
 |-------|----------|
@@ -39,15 +57,7 @@ Only flash after this is green.
 | Pico 2 | `firmware/dist/picocalc_uf2_RPI_PICO2.uf2` |
 | Pico 2 W | `firmware/dist/picocalc_uf2_RPI_PICO2_W.uf2` |
 
-2. Build images (Docker required):
-
-```bash
-./tools/build_uf2.sh RPI_PICO2      # or RPI_PICO / RPI_PICO2_W
-```
-
-3. Power the PicoCalc from its own USB-C port after flashing.
-
-> If you already run zenodante’s PicoCalc MicroPython UF2, skip rebuild and use the **filesystem overlay** below.
+> Already on zenodante MicroPython? Use the **filesystem overlay** below instead of rebuilding.
 
 ## Filesystem overlay (no rebuild)
 

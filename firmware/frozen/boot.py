@@ -1,5 +1,5 @@
 """
-PicoCalc UF2 boot — bring up display, keyboard, SD, VT terminal, editor.
+PicoCalc UF2 boot — display, keyboard, SD, VT terminal, editor, theme, burn-in.
 """
 
 import picocalc
@@ -10,11 +10,20 @@ import vt
 from picocalc_system import run, files, memory, disk
 from pye import pye_edit
 
-# GPIO / servo API available as soon as boot completes
 try:
     import gpio_hw
 except ImportError:
     gpio_hw = None
+
+try:
+    import theme
+except ImportError:
+    theme = None
+
+try:
+    import burnin
+except ImportError:
+    burnin = None
 
 try:
     pc_display = PicoDisplay(320, 320)
@@ -24,6 +33,17 @@ try:
     pcs_L = PicoSpeaker(26)
     pcs_R = PicoSpeaker(27)
     pc_terminal = vt.vt(pc_display, pc_keyboard, sd=pc_sd())
+
+    # Gruvbox dark LUT — muted, easier on IPS panels than stock VT neon.
+    if theme is not None:
+        try:
+            theme.apply_gruvbox(pc_display)
+        except Exception:
+            pass
+
+    if burnin is not None:
+        burnin.care.bind_keyboard(pc_keyboard)
+        burnin.note_input()
 
     _usb = sys.stdout
 
@@ -43,6 +63,8 @@ try:
     def edit(*args, tab_size=2, undo=50):
         """Open the UF2 Python editor with syntax highlighting."""
         pc_terminal.dryBuffer()
+        if burnin is not None:
+            burnin.note_input()
         return pye_edit(args, tab_size=tab_size, undo=undo, io_device=pc_terminal)
 
     picocalc.edit = edit
@@ -59,6 +81,8 @@ try:
         builtins.Servo = gpio_hw.Servo
         builtins.GPIO = gpio_hw.GPIO
         builtins.Analog = gpio_hw.Analog
+    if burnin is not None:
+        builtins.burnin = burnin
 
     os.dupterm(pc_terminal)
     pc_sd.check_mount()

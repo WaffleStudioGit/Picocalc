@@ -63,6 +63,22 @@ class vt(uio.IOBase):
     def recoverRefresh(self):
         self.framebuf.recoverRefresh()
 
+    def _care_tick(self):
+        try:
+            import burnin
+
+            burnin.tick()
+        except ImportError:
+            pass
+
+    def _care_input(self):
+        try:
+            import burnin
+
+            burnin.note_input()
+        except ImportError:
+            pass
+
     def wr(self,input):
         #print("WR:", repr(input))
         for c in input:
@@ -89,22 +105,25 @@ class vt(uio.IOBase):
                 raise ValueError("Non-ASCII character in vtterminal.read()")
 
         n = self.keyboard.readinto(self.keyboardInput)
-        if n:          
+        if n:
             keys = bytes(self.keyboardInput[:n])
             if self.screencaptureKey in keys:
                 self.screencapture()
             self.outputBuffer.extend(self.keyboardInput[:n])
+            self._care_input()
 
     def rd(self):
         while not self.outputBuffer:
             self._updateInternalBuffer()
+            if not self.outputBuffer:
+                self._care_tick()
+                time.sleep_ms(20)
 
         return chr(self.outputBuffer.popleft())
-        
 
     def rd_raw(self):
         return self.rd()
-    
+
     def readinto(self, buf):
         self._updateInternalBuffer()
         count = 0
@@ -115,4 +134,8 @@ class vt(uio.IOBase):
                 count += 1
             else:
                 break
+        if count:
+            self._care_input()
+        else:
+            self._care_tick()
         return count if count > 0 else None

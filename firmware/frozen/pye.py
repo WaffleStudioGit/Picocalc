@@ -300,13 +300,32 @@ class Editor:
                         return KEY_MOUSE, [mouse_x, mouse_y, mouse_fct]
             elif ord(in_buffer[0]) >= 32:
                 return KEY_NONE, in_buffer
+    def _burnin_chrome_visible(self):
+        try:
+            import burnin
+
+            return burnin.chrome_visible()
+        except ImportError:
+            return True
+
+    def _burnin_shift(self):
+        try:
+            import burnin
+
+            return burnin.pixel_shift()
+        except ImportError:
+            return 0
+
     def display_window(self):
         self.cur_line = min(self.total_lines - 1, max(self.cur_line, 0))
         self.vcol = max(0, min(self.col, len(self.content[self.cur_line])))
+        # Anti burn-in: occasional 1-column content nudge on long sessions.
+        shift = self._burnin_shift()
         if self.vcol >= Editor.width + self.margin:
             self.margin = self.vcol - Editor.width + (Editor.width >> 2)
         elif self.vcol < self.margin:
             self.margin = max(self.vcol - (Editor.width >> 2), 0)
+        view_margin = self.margin + shift
         if not (self.top_line <= self.cur_line < self.top_line + Editor.height):
             self.top_line = max(self.cur_line - self.row, 0)
         self.row = self.cur_line - self.top_line
@@ -331,17 +350,24 @@ class Editor:
                         + ((start_line == line) << 1)
                         + (((end_line - 1) == line) << 2)
                     )
-                #l = (flag, self.content[line][self.margin : self.margin + Editor.width])
-                if c<Editor.height-1:
-                    l=(flag,self.content[line][self.margin : self.margin + Editor.width])
+                if c < Editor.height - 1:
+                    l = (
+                        flag,
+                        self.content[line][
+                            view_margin : view_margin + Editor.width
+                        ],
+                    )
                 else:
-                    l=(flag,self.content[line][self.margin : self.margin + Editor.width-1])
+                    l = (
+                        flag,
+                        self.content[line][
+                            view_margin : view_margin + Editor.width - 1
+                        ],
+                    )
                 if (flag and line == self.cur_line) or l != Editor.scrbuf[c]:
                     self.goto(c, 0)
                     if flag == 0:
-                        #self.wr(l[1])
                         highlighted = self.hl.highlight_line(l[1])
-                        #highlighted = self.highlight_line(l[1])
                         self.wr(highlighted)
                     elif flag == 7:
                         self.wr(l[1][:start_col])
@@ -370,20 +396,25 @@ class Editor:
                     Editor.scrbuf[c] = l
                 line += 1
         self.goto(Editor.height, 0)
-        self.hilite(1)
-        self.wr(
-            Editor.TERMCMD[14 if Editor.width > 40 else 15].format(
-                chd=self.changed,
-                file=self.fname,
-                row=self.cur_line + 1,
-                total=self.total_lines,
-                col=self.vcol + 1,
-                msg=self.message,
-            )[: self.width - 1]
-        )
-        self.clear_to_eol()
-        self.hilite(0)
-        self.goto(self.row, self.vcol - self.margin)
+        if self._burnin_chrome_visible():
+            self.hilite(1)
+            self.wr(
+                Editor.TERMCMD[14 if Editor.width > 40 else 15].format(
+                    chd=self.changed,
+                    file=self.fname,
+                    row=self.cur_line + 1,
+                    total=self.total_lines,
+                    col=self.vcol + 1,
+                    msg=self.message,
+                )[: self.width - 1]
+            )
+            self.clear_to_eol()
+            self.hilite(0)
+        else:
+            # Hide status chrome periodically on long sessions (anti burn-in).
+            self.hilite(0)
+            self.clear_to_eol()
+        self.goto(self.row, self.vcol - view_margin)
         self.cursor(True)
     def spaces(self, line, pos=None):
         return (
