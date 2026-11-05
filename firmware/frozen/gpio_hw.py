@@ -185,7 +185,62 @@ def pwm(pin, freq=1000, duty_percent=0, **kw):
     return p
 
 
+class BusI2C:
+    """I2C on header pins (default GP4=SDA, GP5=SCL)."""
+
+    def __init__(self, id=0, sda=4, scl=5, freq=100_000, allow_system=False):
+        from machine import I2C, Pin
+
+        self.sda = _check(sda, allow_system=allow_system)
+        self.scl = _check(scl, allow_system=allow_system)
+        self._i2c = I2C(id, sda=Pin(self.sda), scl=Pin(self.scl), freq=int(freq))
+
+    def scan(self):
+        return self._i2c.scan()
+
+    def writeto(self, addr, buf, stop=True):
+        return self._i2c.writeto(addr, buf, stop)
+
+    def readfrom(self, addr, nbytes, stop=True):
+        return self._i2c.readfrom(addr, nbytes, stop)
+
+    def writeto_mem(self, addr, memaddr, buf, addrsize=8):
+        return self._i2c.writeto_mem(addr, memaddr, buf, addrsize=addrsize)
+
+    def readfrom_mem(self, addr, memaddr, nbytes, addrsize=8):
+        return self._i2c.readfrom_mem(addr, memaddr, nbytes, addrsize=addrsize)
+
+
+class BusUART:
+    """UART on header pins (default GP21=TX, GP28=RX)."""
+
+    def __init__(self, id=0, tx=21, rx=28, baudrate=115200, allow_system=False):
+        from machine import UART, Pin
+
+        self.tx = _check(tx, allow_system=allow_system)
+        self.rx = _check(rx, allow_system=allow_system)
+        self._uart = UART(id, baudrate=int(baudrate), tx=Pin(self.tx), rx=Pin(self.rx))
+
+    def write(self, data):
+        return self._uart.write(data)
+
+    def read(self, nbytes=-1):
+        return self._uart.read(nbytes)
+
+    def any(self):
+        return self._uart.any()
+
+
+def i2c(sda=4, scl=5, **kw):
+    return BusI2C(sda=sda, scl=scl, **kw)
+
+
+def uart(tx=21, rx=28, **kw):
+    return BusUART(tx=tx, rx=rx, **kw)
+
+
 # tests use these names
 _check_pin = _check
 _SYSTEM_PINS = _SYSTEM
 _AUDIO_PINS = _AUDIO
+

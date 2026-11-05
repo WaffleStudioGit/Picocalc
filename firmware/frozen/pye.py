@@ -88,6 +88,8 @@ KEY_PREV_PLACE = const(0xFFE2)
 KEY_UNDO_PREV = const(0xFFE1)
 KEY_UNDO_NEXT = const(0xFFE0)
 KEY_UNDO_YANK = const(0xFFDF)
+KEY_RUN = const(0xFFDE)  # Ctrl-R / F5 — save + run buffer
+KEY_TIMEOUT = const(0xFFDD)  # idle poll (autosave)
 
 
 class Editor:
@@ -124,7 +126,8 @@ class Editor:
         "\x1b[Z": KEY_BACKTAB,
         "\x19": KEY_REDO,
         "\x08": KEY_REPLC,
-        "\x12": KEY_REPLC,
+        "\x12": KEY_RUN,
+        "\x1b[15~": KEY_RUN,
         "\x11": KEY_QUIT,
         "\x1b": KEY_QUIT,
         "\n": KEY_ENTER,
@@ -212,6 +215,12 @@ class Editor:
         self.wr = io_device.wr
         self.is_dir = False
         self.key_max = 0
+        try:
+            import care as _care
+
+            self._last_autosave = _care._ticks()
+        except Exception:
+            self._last_autosave = 0
         for _ in Editor.KEYMAP.keys():
             self.key_max = max(self.key_max, len(_))
 
@@ -265,14 +274,57 @@ class Editor:
             if flag:
                 self.message += "{} Bytes Memory available".format(gc.mem_free())
         self.changed = "" if self.hash == self.hash_buffer() else "*"
+    def _rd(self, timeout_ms=None):
+        if timeout_ms is not None and hasattr(self.io_device, "rd"):
+            try:
+                return self.io_device.rd(timeout_ms)
+            except TypeError:
+                return self.io_device.rd()
+        return self.io_device.rd()
+
+    def _maybe_autosave(self):
+        if self.is_dir or not self.fname:
+            return
+        if self.hash == self.hash_buffer():
+            return
+        try:
+            import care
+
+            if not care.care.autosave_due(self._last_autosave):
+                return
+        except Exception:
+            return
+        try:
+            if hasattr(self.io_device, "stopRefresh"):
+                self.io_device.stopRefresh()
+            self.put_file(self.fname)
+            if hasattr(self.io_device, "recoverRefresh"):
+                self.io_device.recoverRefresh()
+            self.hash = self.hash_buffer()
+            self.changed = ""
+            try:
+                import care
+
+                self._last_autosave = care._ticks()
+            except Exception:
+                pass
+            self.message = "autosaved"
+        except Exception as err:
+            self.message = "autosave fail"
+
     def get_input(
         self,
     ):
         while True:
-            in_buffer = self.io_device.rd()
+            in_buffer = self._rd(500)
+            if in_buffer is None:
+                return KEY_TIMEOUT, None
             if in_buffer[0] == "\x1b":
                 while True:
-                    in_buffer += self.io_device.rd()
+                    nxt = self._rd(200)
+                    if nxt is None:
+                        break
+                    in_buffer += nxt
                     c = in_buffer[-1]
                     if c == "~" or (c.isalpha() and len(in_buffer) > 2):
                         break
@@ -1123,6 +1175,14 @@ class Editor:
                 self.hash = self.hash_buffer()
                 self.changed = ""
                 self.is_dir = False
+                try:
+                    import care
+
+                    self._last_autosave = care._ticks()
+                except Exception:
+                    pass
+        elif key == KEY_RUN:
+            self._run_buffer()
         elif key == KEY_UNDO:
             self.undo_redo(self.undo, self.redo)
         elif key == KEY_REDO:
@@ -1176,6 +1236,62 @@ class Editor:
             if len(self.undo) > 0:
                 Editor.yank_buffer = self.undo[self.undo_index][2]
         return key
+    def _run_buffer(self):
+        """Save (if named) then exec buffer; on error jump to traceback line."""
+        if self.is_dir:
+            self.message = "not a file"
+            return
+        fname = self.fname
+        if fname:
+            try:
+                if hasattr(self.io_device, "stopRefresh"):
+                    self.io_device.stopRefresh()
+                self.put_file(fname)
+                if hasattr(self.io_device, "recoverRefresh"):
+                    self.io_device.recoverRefresh()
+                self.hash = self.hash_buffer()
+                self.changed = ""
+            except Exception as err:
+                self.message = "save fail"
+                return
+        code = "\n".join(self.content)
+        ns = {"__name__": "__main__", "__file__": fname or "<buffer>"}
+        try:
+            import gpio_hw
+
+            ns["gpio_hw"] = gpio_hw
+            ns["Servo"] = gpio_hw.Servo
+            ns["GPIO"] = gpio_hw.GPIO
+            ns["Analog"] = gpio_hw.Analog
+            ns["i2c"] = gpio_hw.i2c
+            ns["uart"] = gpio_hw.uart
+        except ImportError:
+            pass
+        try:
+            exec(compile(code, fname or "<buffer>", "exec"), ns, ns)
+            try:
+                import errjump
+
+                errjump.clear()
+            except ImportError:
+                pass
+            self.message = "ran ok"
+            self.redraw(False)
+        except Exception as exc:
+            try:
+                import errjump
+
+                errjump.record(exc, default_file=fname)
+                if errjump.LAST.get("line"):
+                    self.cur_line = max(0, int(errjump.LAST["line"]) - 1)
+                    self.row = Editor.height >> 1 if Editor.height else 10
+                    self.message = "err L%d" % errjump.LAST["line"]
+                else:
+                    self.message = "run error"
+            except ImportError:
+                self.message = "run error"
+            self.redraw(False)
+
     def edit_loop(self):
         if not self.content:
             self.content = [""]
@@ -1185,6 +1301,9 @@ class Editor:
         while True:
             self.display_window() 
             key, char = self.get_input()
+            if key == KEY_TIMEOUT:
+                self._maybe_autosave()
+                continue
             self.message = ""
             key = self.handle_edit_keys(key, char)           
             if key == KEY_QUIT:
@@ -1280,7 +1399,7 @@ class Editor:
             return sb.getvalue()
         else:
             return s
-def pye_edit(content, tab_size=4, undo=50, io_device=None):
+def pye_edit(content, tab_size=4, undo=50, io_device=None, goto_line=None):
     if io_device is None:
         print("IO device not defined")
         return
@@ -1308,6 +1427,12 @@ def pye_edit(content, tab_size=4, undo=50, io_device=None):
     else:
         slot = [Editor(tab_size, undo, io_device)]
         slot[0].get_file(current_dir)
+    if goto_line is not None and slot:
+        try:
+            slot[0].cur_line = max(0, int(goto_line) - 1)
+            slot[0].row = 10
+        except Exception:
+            pass
     while True:
         try:
             index %= len(slot)

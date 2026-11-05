@@ -112,17 +112,20 @@ class vt(uio.IOBase):
             self.outputBuffer.extend(self.keyboardInput[:n])
             self._care_input()
 
-    def rd(self):
+    def rd(self, timeout_ms=None):
+        start = time.ticks_ms() if timeout_ms is not None else 0
         while not self.outputBuffer:
             self._updateInternalBuffer()
             if not self.outputBuffer:
                 self._care_tick()
+                if timeout_ms is not None:
+                    if time.ticks_diff(time.ticks_ms(), start) >= timeout_ms:
+                        return None
                 time.sleep_ms(20)
-
         return chr(self.outputBuffer.popleft())
 
-    def rd_raw(self):
-        return self.rd()
+    def rd_raw(self, timeout_ms=None):
+        return self.rd(timeout_ms=timeout_ms)
 
     def readinto(self, buf):
         self._updateInternalBuffer()
