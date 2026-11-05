@@ -1,5 +1,5 @@
 """
-PicoCalc UFO — MicroPython-friendly Python syntax highlighter.
+PicoCalc UF2 firmware — MicroPython-friendly Python syntax highlighter.
 
 Tokenizes a single line for the on-device editor (pye). Highlights:
   keywords, strings, comments, numbers, builtins, and decorators.

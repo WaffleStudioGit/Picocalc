@@ -1,5 +1,5 @@
 """
-PicoCalc UFO — GPIO, PWM, ADC, and servo helpers for the exposed header.
+PicoCalc UF2 firmware — GPIO, PWM, ADC, and servo helpers for the exposed header.
 
 Safe header pins on PicoCalc (Core GPIOs header):
   GP2, GP3, GP4, GP5, GP21, GP28   (+ 3V3 / GND)
@@ -16,11 +16,15 @@ Typical servo wiring:
   GND    -> shared GND with PicoCalc
 """
 
-try:
-    from machine import Pin, PWM, ADC
-except ImportError:
-    # Host unit-test shim — real hardware uses machine.*
-    Pin = PWM = ADC = None
+
+def _machine_parts():
+    """Import machine lazily so host tests can inject mocks first."""
+    try:
+        import machine
+    except ImportError as exc:
+        raise RuntimeError("machine module not available") from exc
+    return machine.Pin, machine.PWM, machine.ADC
+
 
 # Pins brought out on the PicoCalc "Core GPIOs" header.
 HEADER_PINS = (2, 3, 4, 5, 21, 28)
@@ -90,8 +94,7 @@ class GPIO:
     IN_PULLDOWN = 3
 
     def __init__(self, pin, mode=OUT, value=0, allow_audio=False, allow_system=False):
-        if Pin is None:
-            raise RuntimeError("machine.Pin not available")
+        Pin, _PWM, _ADC = _machine_parts()
         self.pin_num = _check_pin(pin, allow_audio=allow_audio, allow_system=allow_system)
         self._mode = mode
         if mode == self.OUT:
@@ -130,8 +133,7 @@ class SoftPWM:
     """PWM wrapper with duty helpers (percent / u16 / microseconds)."""
 
     def __init__(self, pin, freq=1000, duty_u16=0, allow_audio=False, allow_system=False):
-        if PWM is None or Pin is None:
-            raise RuntimeError("machine.PWM not available")
+        Pin, PWM, _ADC = _machine_parts()
         self.pin_num = _check_pin(pin, allow_audio=allow_audio, allow_system=allow_system)
         self._pwm = PWM(Pin(self.pin_num))
         self._pwm.freq(int(freq))
@@ -215,7 +217,6 @@ class Servo:
     def write_us(self, us):
         us = max(self.min_us, min(self.max_us, int(us)))
         self._pwm.duty_us(us, period_us=_SERVO_PERIOD_US)
-        # keep angle estimate in sync
         span_us = self.max_us - self.min_us
         if span_us:
             t = (us - self.min_us) / span_us
@@ -254,8 +255,7 @@ class Analog:
     _ADC_PINS = {26: 0, 27: 1, 28: 2, 29: 3}
 
     def __init__(self, pin=28, allow_audio=False, allow_system=False):
-        if ADC is None or Pin is None:
-            raise RuntimeError("machine.ADC not available")
+        Pin, _PWM, ADC = _machine_parts()
         self.pin_num = _check_pin(pin, allow_audio=allow_audio, allow_system=allow_system)
         if self.pin_num not in self._ADC_PINS:
             raise ValueError(
@@ -269,9 +269,6 @@ class Analog:
 
     def read_volts(self, vref=3.3):
         return self._adc.read_u16() * float(vref) / 65535.0
-
-
-# Convenience constructors -------------------------------------------------
 
 
 def servo(pin=21, **kwargs):

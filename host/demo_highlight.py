@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render sample UFO editor lines with ANSI syntax highlighting."""
+"""Render sample UF2 editor lines with ANSI syntax highlighting."""
 import os
 import sys
 
@@ -10,7 +10,7 @@ from default_style import syntax_style
 from highlighter import Highlighter
 
 SAMPLE = """\
-# PicoCalc UFO — servo + GPIO sample
+# PicoCalc UF2 — servo + GPIO sample
 from gpio_hw import Servo, GPIO, list_pins
 
 def sweep(pin=21):
@@ -30,7 +30,7 @@ sweep(21)
 
 def main():
     hl = Highlighter(syntax_style=syntax_style)
-    print("\x1b[1mPicoCalc UFO editor preview (syntax highlighting)\x1b[0m\n")
+    print("\x1b[1mPicoCalc UF2 editor preview (syntax highlighting)\x1b[0m\n")
     for i, line in enumerate(SAMPLE.splitlines(), 1):
         print(f"\x1b[90m{i:3}\x1b[0m {hl.highlight_line(line)}")
     print()

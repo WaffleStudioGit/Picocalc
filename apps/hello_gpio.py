@@ -2,7 +2,7 @@
 from gpio_hw import Servo, GPIO, Analog, list_pins
 import time
 
-print("PicoCalc UFO GPIO demo")
+print("PicoCalc UF2 GPIO demo")
 print(list_pins())
 
 # Digital out on GP21

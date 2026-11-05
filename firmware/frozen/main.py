@@ -1,11 +1,11 @@
 """
-PicoCalc UFO entrypoint — launch the interactive shell.
+PicoCalc UF2 firmware entrypoint — launch the interactive shell.
 """
 
 try:
-    import ufo_shell
+    import uf2_shell
 
-    ufo_shell.run()
+    uf2_shell.run()
 except Exception as e:
     import sys
 
