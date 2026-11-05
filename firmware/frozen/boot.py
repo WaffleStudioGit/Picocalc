@@ -1,5 +1,5 @@
 """
-PicoCalc UFO boot — bring up display, keyboard, SD, VT terminal, editor.
+PicoCalc UF2 boot — bring up display, keyboard, SD, VT terminal, editor.
 """
 
 import picocalc
@@ -41,13 +41,12 @@ try:
     picocalc.sd = pc_sd
 
     def edit(*args, tab_size=2, undo=50):
-        """Open the UFO Python editor with syntax highlighting."""
+        """Open the UF2 Python editor with syntax highlighting."""
         pc_terminal.dryBuffer()
         return pye_edit(args, tab_size=tab_size, undo=undo, io_device=pc_terminal)
 
     picocalc.edit = edit
 
-    # Re-export helpers into builtins for convenient REPL use
     import builtins
 
     builtins.edit = edit
@@ -67,6 +66,6 @@ try:
 except Exception as e:
     sys.print_exception(e)
     try:
-        os.dupterm(None).write(b"[UFO boot.py error]\n")
+        os.dupterm(None).write(b"[UF2 boot.py error]\n")
     except Exception:
         pass

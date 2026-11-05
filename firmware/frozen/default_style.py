@@ -1,5 +1,5 @@
 """
-PicoCalc UFO — Python syntax highlighting styles (VT100 / 16-color terminal).
+PicoCalc UF2 firmware — Python syntax highlighting styles (VT100 / 16-color).
 
 Colors map to the PicoCalc ILI9488 VT100 LUT used by the on-device editor.
 """

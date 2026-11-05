@@ -12,7 +12,7 @@ from default_style import syntax_style
 from highlighter import Highlighter
 
 SAMPLE = """\
-# PicoCalc UFO — servo + GPIO sample
+# PicoCalc UF2 — servo + GPIO sample
 from gpio_hw import Servo, GPIO, list_pins
 
 def sweep(pin=21):
@@ -77,7 +77,7 @@ def main():
         )
     doc = f"""<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"/>
-<title>PicoCalc UFO — Python editor syntax highlighting</title>
+<title>PicoCalc UF2 — Python editor syntax highlighting</title>
 <style>
   body {{ margin:0; background:#0b1020; color:#d6d6d6;
          font: 15px/1.55 "IBM Plex Mono", "Cascadia Code", ui-monospace, monospace; }}
@@ -91,7 +91,7 @@ def main():
   .badge {{ display:inline-block; margin-top:1rem; padding:.25rem .6rem; border:1px solid #334155;
             color:#93c5fd; border-radius:4px; font-size:12px; }}
 </style></head><body><div class="wrap">
-<h1>PicoCalc UFO firmware — on-device Python editor</h1>
+<h1>PicoCalc UF2 firmware — on-device Python editor</h1>
 <p>Syntax highlighting for keywords, strings, comments, numbers, and builtins.
 Control servos and GPIO from the same editor via <code>gpio_hw</code>.</p>
 <div class="editor">

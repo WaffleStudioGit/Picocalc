@@ -1,6 +1,6 @@
 # Third-party credits
 
-PicoCalc UFO firmware builds on:
+PicoCalc UF2 firmware builds on:
 
 - **zenodante/PicoCalc-micropython-driver** — ILI9488 display C module (`picocalcdisplay`), VT100 terminal C module (`vtterminal`), and PicoCalc MicroPython hardware bindings (`picocalc.py`, `vt.py`, SD helpers).  
   https://github.com/zenodante/PicoCalc-micropython-driver
@@ -14,4 +14,4 @@ PicoCalc UFO firmware builds on:
 - **micropython-lib `sdcard.py`** — SD card driver.  
   https://github.com/micropython/micropython-lib
 
-UFO-specific additions (this repository): enhanced syntax highlighter, `gpio_hw` servo/GPIO API, `ufo_shell` launcher, apps, and build packaging.
+UF2-firmware-specific additions (this repository): enhanced syntax highlighter, `gpio_hw` servo/GPIO API, `uf2_shell` launcher, apps, host test suite, and build packaging.

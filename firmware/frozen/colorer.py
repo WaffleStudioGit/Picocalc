@@ -45,9 +45,11 @@ def autoreset(state):
     global _global_autoreset
     _global_autoreset = state
     
-def print(*args, sep=' ', end='\n', file=sys.stdout):
+def print(*args, sep=' ', end='\n', file=None):
     """Custom print function that respects the global autoreset setting."""
     global _global_autoreset
+    if file is None:
+        file = sys.stdout  # resolve at call time (host tests redirect stdout)
     text = sep.join(map(str, args))
     if _global_autoreset:
         text += Style.RESET_ALL

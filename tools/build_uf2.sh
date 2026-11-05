@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build PicoCalc UFO UF2 via Docker.
+# Build PicoCalc MicroPython UF2 images via Docker.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BOARD="${1:-RPI_PICO2}"
@@ -12,11 +12,11 @@ if ! command -v docker >/dev/null 2>&1; then
   exit 1
 fi
 
-docker build -t picocalc-ufo-build -f "$ROOT/firmware/Dockerfile" "$ROOT"
+docker build -t picocalc-uf2-build -f "$ROOT/firmware/Dockerfile" "$ROOT"
 docker run --rm \
   -e "BOARD=${BOARD}" \
   -v "$ROOT/firmware/dist:/out" \
-  picocalc-ufo-build
+  picocalc-uf2-build
 
 echo "UF2 + fs stub written to firmware/dist/"
 ls -la "$ROOT/firmware/dist/"
