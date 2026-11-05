@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"/>
+<title>PicoCalc UFO — Python editor syntax highlighting</title>
+<style>
+  body { margin:0; background:#0b1020; color:#d6d6d6;
+         font: 15px/1.55 "IBM Plex Mono", "Cascadia Code", ui-monospace, monospace; }
+  .wrap { max-width: 820px; margin: 2rem auto; padding: 0 1rem; }
+  h1 { font: 600 1.4rem/1.2 "IBM Plex Sans", system-ui, sans-serif; color:#f8fafc; }
+  p { font: 14px/1.4 "IBM Plex Sans", system-ui, sans-serif; color:#94a3b8; }
+  .editor { background:#111827; border:1px solid #1f2937; border-radius:8px;
+             padding:1rem 0.75rem; box-shadow: 0 20px 50px rgba(0,0,0,.45); }
+  .line { white-space: pre; }
+  .ln { display:inline-block; width:3ch; color:#4b5563; margin-right:1ch; user-select:none; }
+  .badge { display:inline-block; margin-top:1rem; padding:.25rem .6rem; border:1px solid #334155;
+            color:#93c5fd; border-radius:4px; font-size:12px; }
+</style></head><body><div class="wrap">
+<h1>PicoCalc UFO firmware — on-device Python editor</h1>
+<p>Syntax highlighting for keywords, strings, comments, numbers, and builtins.
+Control servos and GPIO from the same editor via <code>gpio_hw</code>.</p>
+<div class="editor">
+<div class="line"><span class="ln">  1</span><code><span style="color:#4ade80"># PicoCalc UFO — servo + GPIO sample</span></code></div><div class="line"><span class="ln">  2</span><code><span style="color:#e8e8e8;background:#1e3a8a">from</span> gpio_hw <span style="color:#e8e8e8;background:#1e3a8a">import</span> <span style="color:#60a5fa">Servo</span>, <span style="color:#60a5fa">GPIO</span>, list_pins</code></div><div class="line"><span class="ln">  3</span><code></code></div><div class="line"><span class="ln">  4</span><code><span style="color:#e8e8e8;background:#1e3a8a">def</span> sweep(pin=<span style="color:#22d3ee">21</span>):</code></div><div class="line"><span class="ln">  5</span><code>    s = <span style="color:#60a5fa">Servo</span>(pin)</code></div><div class="line"><span class="ln">  6</span><code>    <span style="color:#0b1020;background:#22d3ee">for</span> angle <span style="color:#0b1020;background:#22d3ee">in</span> <span style="color:#60a5fa">range</span>(<span style="color:#22d3ee">0</span>, <span style="color:#22d3ee">181</span>, <span style="color:#22d3ee">10</span>):</code></div><div class="line"><span class="ln">  7</span><code>        s.write(angle)  <span style="color:#4ade80"># 0..180 degrees</span></code></div><div class="line"><span class="ln">  8</span><code>    <span style="color:#e8e8e8;background:#7e22ce">return</span> <span style="color:#22d3ee">True</span></code></div><div class="line"><span class="ln">  9</span><code></code></div><div class="line"><span class="ln"> 10</span><code><span style="color:#60a5fa">print</span>(list_pins())</code></div><div class="line"><span class="ln"> 11</span><code>sweep(<span style="color:#22d3ee">21</span>)</code></div>
+</div>
+<div class="badge">edit('/apps/servo_sweep.py') · Ctrl-S save · Ctrl-Q quit</div>
+</div></body></html>
