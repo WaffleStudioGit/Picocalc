@@ -200,5 +200,29 @@ class AnalogTests(unittest.TestCase):
         self.assertEqual(a.pin_num, 26)
 
 
+class BusTests(unittest.TestCase):
+    def setUp(self):
+        self.gpio = load_gpio_hw()
+        self.machine = sys.modules["machine"]
+
+    def test_i2c_header_defaults(self):
+        bus = self.gpio.i2c()
+        self.assertEqual(bus.sda, 4)
+        self.assertEqual(bus.scl, 5)
+        self.assertTrue(self.machine.I2C.registry)
+
+    def test_i2c_rejects_system_pin(self):
+        with self.assertRaises(ValueError):
+            self.gpio.BusI2C(sda=6, scl=7)
+
+    def test_uart_header_defaults(self):
+        u = self.gpio.uart()
+        self.assertEqual(u.tx, 21)
+        self.assertEqual(u.rx, 28)
+        u.write(b"hi")
+        self.assertEqual(u.read(), b"hi")
+
+
 if __name__ == "__main__":
     unittest.main()
+

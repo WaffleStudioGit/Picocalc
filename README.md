@@ -22,10 +22,14 @@ Or BOOTSEL-flash `firmware/dist/picocalc_uf2_*.uf2`.
 ## On device
 
 ```
+browse                 # pick .py to edit (r2 = run #2)
+status                 # about + battery/backlight/RAM/care
 edit /apps/hello_gpio.py
-from gpio_hw import Servo; Servo(21).write(90)
+# editor: Ctrl-S save · Ctrl-R / F5 save+run · autosave every 5 min
+jump                   # open last traceback file:line
+from gpio_hw import Servo, i2c, uart
 ```
 
-Idle dims/off the backlight; status bar hides on long sessions. Header pins: **GP21 / GP28** (see `pins`).
+Burn-in (aggressive): dim ~30s, off ~60s, status chrome mostly hidden after ~1 min, 1-col shift ~2 min. Tune via `sdcard/uf2_care.json` on the SD card.
 
 Credits: [THIRD_PARTY.md](THIRD_PARTY.md).
