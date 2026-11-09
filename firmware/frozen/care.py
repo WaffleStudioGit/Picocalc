@@ -14,7 +14,11 @@ _CHROME_AFTER = 60_000  # hide status quickly
 _CHROME_PERIOD = 60_000
 _CHROME_HIDE = 50_000  # mostly hidden once session is long
 _SHIFT_MS = 120_000  # shift every 2 min
-_AUTOSAVE_MS = 300_000  # 5 min (feature #2)
+_AUTOSAVE_MS = 300_000  # 5 min autosave
+# Battery-low → earlier dim/off (keyboard battery() is mV)
+_BATT_LOW_MV = 3500
+_BATT_LOW_DIM_MS = 10_000
+_BATT_LOW_OFF_MS = 25_000
 
 _CFG_PATHS = ("/sd/uf2_care.json", "uf2_care.json", "/uf2_care.json")
 
@@ -80,6 +84,7 @@ def load_config(path=None):
     """Load care timings from JSON. Keys match module knobs without _ prefix casing."""
     global _DIM_MS, _OFF_MS, _DIM, _CHROME_AFTER, _CHROME_PERIOD
     global _CHROME_HIDE, _SHIFT_MS, _AUTOSAVE_MS
+    global _BATT_LOW_MV, _BATT_LOW_DIM_MS, _BATT_LOW_OFF_MS
     paths = (path,) if path else _CFG_PATHS
     data = None
     used = None
@@ -108,6 +113,9 @@ def load_config(path=None):
     _CHROME_HIDE = int(g("chrome_hide_ms", default=_CHROME_HIDE))
     _SHIFT_MS = int(g("shift_ms", default=_SHIFT_MS))
     _AUTOSAVE_MS = int(g("autosave_ms", default=_AUTOSAVE_MS))
+    _BATT_LOW_MV = int(g("batt_low_mv", default=_BATT_LOW_MV))
+    _BATT_LOW_DIM_MS = int(g("batt_low_dim_ms", default=_BATT_LOW_DIM_MS))
+    _BATT_LOW_OFF_MS = int(g("batt_low_off_ms", default=_BATT_LOW_OFF_MS))
     if "enabled" in data:
         care.enabled = bool(data["enabled"])
     return used
@@ -123,8 +131,41 @@ def settings():
         "chrome_hide_ms": _CHROME_HIDE,
         "shift_ms": _SHIFT_MS,
         "autosave_ms": _AUTOSAVE_MS,
+        "batt_low_mv": _BATT_LOW_MV,
+        "batt_low_dim_ms": _BATT_LOW_DIM_MS,
+        "batt_low_off_ms": _BATT_LOW_OFF_MS,
         "enabled": care.enabled,
     }
+
+
+def battery_mv():
+    """Keyboard battery reading in mV, or None."""
+    kb = care._kb
+    if kb is None:
+        try:
+            import picocalc
+
+            kb = getattr(picocalc, "keyboard", None)
+        except ImportError:
+            kb = None
+    if not kb or not hasattr(kb, "battery"):
+        return None
+    try:
+        return int(kb.battery())
+    except Exception:
+        return None
+
+
+def effective_idle_ms():
+    """Return (dim_ms, off_ms), shortened when battery is below batt_low_mv."""
+    dim_ms, off_ms = _DIM_MS, _OFF_MS
+    mv = battery_mv()
+    if mv is not None and 0 < mv < _BATT_LOW_MV:
+        if _BATT_LOW_DIM_MS > 0:
+            dim_ms = min(dim_ms, _BATT_LOW_DIM_MS)
+        if _BATT_LOW_OFF_MS > 0:
+            off_ms = min(off_ms, _BATT_LOW_OFF_MS)
+    return dim_ms, off_ms
 
 
 class Care:
@@ -186,11 +227,12 @@ class Care:
         if not self.enabled:
             return
         idle = _diff(_ticks(), self.last_input)
-        if idle >= _OFF_MS:
+        dim_ms, off_ms = effective_idle_ms()
+        if idle >= off_ms:
             if not self.blanked:
                 self._backlight(0)
                 self.blanked = self.dimmed = True
-        elif idle >= _DIM_MS:
+        elif idle >= dim_ms:
             if not self.dimmed:
                 self._backlight(_DIM)
                 self.dimmed = True

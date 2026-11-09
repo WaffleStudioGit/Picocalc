@@ -15,6 +15,7 @@ REQUIRED = {
     "uf2_shell.py",
     "care.py",
     "errjump.py",
+    "softbreak.py",
     "highlighter.py",
     "default_style.py",
     "pye.py",

@@ -11,10 +11,9 @@ tags:
   - burn-in
   - editor
 created: 2026-11-04
-updated: 2026-11-04
+updated: 2026-11-08
 repo: WaffleStudioGit/Picocalc
-branch: cursor/uf2-features-burnin-19c7
-pr: https://github.com/WaffleStudioGit/Picocalc/pull/4
+branch: cursor/uf2-find-break-batt-19c7
 ---
 
 # PicoCalc UF2 — Features & Burn-in
@@ -35,6 +34,9 @@ Lean MicroPython UF2 for ClockworkPi PicoCalc: on-device editor, shell, GPIO hel
 | 7+12 | About + diagnostics (one menu) | `status` (also `mem`) |
 | 8 | Care config loader | `/sd/uf2_care.json` |
 | 9 | I2C / UART pin helpers | `gpio_hw.i2c` / `gpio_hw.uart` |
+| — | Find `/` + `n`/`N` (replace opt-in) | Editor Ctrl-F / Ctrl-H |
+| — | Soft-break Ctrl-C on run | `softbreak` + `check_break()` |
+| — | Battery-low earlier dim | `batt_low_*` in care JSON |
 
 ## Quick start (device)
 
@@ -51,7 +53,9 @@ Editor keys:
 | Key | Action |
 |-----|--------|
 | Ctrl-S | Save |
-| Ctrl-R / F5 | Save + run buffer |
+| Ctrl-R / F5 | Save + run buffer (Ctrl-C soft-break) |
+| Ctrl-F | Find — prompt is `/`; then bare `n` / `N` for next / prev |
+| Ctrl-H | Replace (opt-in; yes/No/all/quit per match) |
 | (idle) | Autosave dirty named file every 5 min |
 
 Build / SD / tests → see repo root `README.md`.
@@ -140,6 +144,9 @@ Shipped example: `sdcard/uf2_care.json` (copy onto MicroSD root or keep with the
   "chrome_hide_ms": 50000,
   "shift_ms": 120000,
   "autosave_ms": 300000,
+  "batt_low_mv": 3500,
+  "batt_low_dim_ms": 10000,
+  "batt_low_off_ms": 25000,
   "enabled": true
 }
 ```
@@ -154,7 +161,22 @@ Shipped example: `sdcard/uf2_care.json` (copy onto MicroSD root or keep with the
 | `chrome_hide_ms` | 50000 | How long chrome stays hidden in cycle |
 | `shift_ms` | 120000 | 1-column content nudge interval |
 | `autosave_ms` | 300000 | Editor autosave interval |
+| `batt_low_mv` | 3500 | Below this mV, use batt_low_* timings |
+| `batt_low_dim_ms` | 10000 | Dim sooner when battery low |
+| `batt_low_off_ms` | 25000 | Blank sooner when battery low |
 | `enabled` | true | Master care switch |
+
+### Soft-break (Ctrl-C)
+
+During `run` / editor Ctrl-R, `softbreak` arms a keyboard poll and breakable `time.sleep`. Tight loops should call `check_break()` (injected into the run namespace):
+
+```python
+while True:
+    check_break()
+    # work...
+```
+
+Source: `firmware/frozen/softbreak.py`.
 
 > [!tip] Soften burn-in
 > Raise `dim_ms` / `off_ms` / `shift_ms` if the aggressive defaults feel too twitchy. Set `enabled` to `false` only if you accept ghosting risk on a static UI.
@@ -214,9 +236,10 @@ Arbitrary Python also evaluates in the shell namespace (`Servo`, `GPIO`, `i2c`, 
 
 | Path | Role |
 |------|------|
-| `firmware/frozen/care.py` | Burn-in + config + autosave timing |
-| `firmware/frozen/pye.py` | Editor: autosave, Ctrl-R/F5, chrome/shift |
-| `firmware/frozen/uf2_shell.py` | browse / status / jump |
+| `firmware/frozen/care.py` | Burn-in + config + autosave + batt-low dim |
+| `firmware/frozen/pye.py` | Editor: autosave, find n/N, Ctrl-R/F5, chrome/shift |
+| `firmware/frozen/softbreak.py` | Ctrl-C soft-break during run |
+| `firmware/frozen/uf2_shell.py` | browse / status / jump / run |
 | `firmware/frozen/errjump.py` | Last traceback file:line |
 | `firmware/frozen/gpio_hw.py` | GPIO + Servo + I2C + UART |
 | `sdcard/uf2_care.json` | Tunable care defaults for SD |

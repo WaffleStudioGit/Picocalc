@@ -11,7 +11,7 @@ except ImportError:
 
 HELP = (
     "help browse [dir] edit [f] new [f] run <f> jump status "
-    "pins ls cat cd pwd servo high/low quit"
+    "pins ls cat cd pwd servo high/low quit | Ctrl-C stops run"
 )
 
 _FIRMWARE = "PicoCalc UF2"
@@ -54,10 +54,26 @@ def _run_path(path, state):
     except ImportError:
         pass
     try:
+        import softbreak
+
+        g["check_break"] = softbreak.check
+        g["softbreak"] = softbreak
+    except ImportError:
+        softbreak = None
+    try:
         with open(path) as f:
             code = f.read()
-        exec(compile(code, path, "exec"), g, g)
+
+        def _exec():
+            exec(compile(code, path, "exec"), g, g)
+
+        if softbreak:
+            softbreak.run_guarded(_exec)
+        else:
+            _exec()
         print("ok")
+    except KeyboardInterrupt:
+        print("interrupted (Ctrl-C) — use check_break() in tight loops")
     except Exception as e:
         text = errjump.record(e, default_file=path)
         print(text)
@@ -155,14 +171,25 @@ def cmd_status():
         import care
 
         s = care.settings()
+        dim_e, off_e = care.effective_idle_ms()
         print(
             "care dim/off",
             s["dim_ms"],
             s["off_ms"],
+            "eff",
+            dim_e,
+            off_e,
             "shift",
             s["shift_ms"],
             "autosave",
             s["autosave_ms"],
+        )
+        print(
+            "batt_low",
+            s["batt_low_mv"],
+            "mV → dim/off",
+            s["batt_low_dim_ms"],
+            s["batt_low_off_ms"],
         )
     except Exception:
         pass

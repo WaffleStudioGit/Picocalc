@@ -13,5 +13,6 @@ def viper(f):
     return f
 
 
-class schedule:
-    pass
+def schedule(callback, arg):
+    """Host stub: run immediately (device queues to main thread)."""
+    callback(arg)
