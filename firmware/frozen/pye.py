@@ -215,6 +215,7 @@ class Editor:
         self.wr = io_device.wr
         self.is_dir = False
         self.key_max = 0
+        self.find_nav = False  # after /, bare n/N jump matches (no insert)
         try:
             import care as _care
 
@@ -616,7 +617,7 @@ class Editor:
     def move_right(self, l):
         if not self.skip_down(l):
             self.col += 1
-    def find_in_file(self, pattern, col, end):
+    def find_in_file(self, pattern, col, end, backwards=False):
         Editor.find_pattern = pattern
         if Editor.case != "y":
             pattern = pattern.lower()
@@ -624,6 +625,37 @@ class Editor:
             rex = re_compile(pattern)
         except:
             self.message = "Invalid pattern: " + pattern
+            self.find_nav = False
+            return None
+        if backwards:
+            start = self.cur_line
+            for line in range(start, -1, -1):
+                raw = self.content[line]
+                cmp_l = raw.lower() if Editor.case != "y" else raw
+                segment = cmp_l[:col] if line == start else cmp_l
+                last_col = None
+                last_len = 0
+                s = segment
+                base = 0
+                while s:
+                    match = rex.search(s)
+                    if not match:
+                        break
+                    last_col = base + match.start()
+                    last_len = len(match.group(0))
+                    step = match.start() + (1 if last_len == 0 else last_len)
+                    if step <= 0:
+                        step = 1
+                    base += step
+                    s = segment[base:]
+                if last_col is not None:
+                    self.cur_line = line
+                    self.col = last_col
+                    self.find_nav = True
+                    self.message = "n/N next/prev"
+                    return last_len
+                col = 999999
+            self.message = Editor.find_pattern + " not found (again)"
             return None
         start = self.cur_line
         if col > len(self.content[start]) or (
@@ -641,6 +673,8 @@ class Editor:
                     self.col = col + len(l) - len(match.group(0))
                 else:
                     self.col = col + l.find(match.group(0))
+                self.find_nav = True
+                self.message = "n/N next/prev"
                 return len(match.group(0))
             col = 0
         else:
@@ -854,7 +888,8 @@ class Editor:
         elif key == KEY_PGDN:
             self.cur_line += Editor.height
         elif key == KEY_FIND:
-            pat = self.line_edit("Find: ", Editor.find_pattern, "_")
+            # Slash-style prompt; replace stays on Ctrl-H (opt-in).
+            pat = self.line_edit("/", Editor.find_pattern, "_")
             if pat:
                 self.clear_mark()
                 self.find_in_file(pat, self.col + 1, self.total_lines)
@@ -1268,7 +1303,20 @@ class Editor:
         except ImportError:
             pass
         try:
-            exec(compile(code, fname or "<buffer>", "exec"), ns, ns)
+            import softbreak
+
+            ns["check_break"] = softbreak.check
+            ns["softbreak"] = softbreak
+        except ImportError:
+            softbreak = None
+        try:
+            def _exec():
+                exec(compile(code, fname or "<buffer>", "exec"), ns, ns)
+
+            if softbreak:
+                softbreak.run_guarded(_exec)
+            else:
+                _exec()
             try:
                 import errjump
 
@@ -1276,6 +1324,9 @@ class Editor:
             except ImportError:
                 pass
             self.message = "ran ok"
+            self.redraw(False)
+        except KeyboardInterrupt:
+            self.message = "interrupted (Ctrl-C)"
             self.redraw(False)
         except Exception as exc:
             try:
@@ -1304,6 +1355,21 @@ class Editor:
             if key == KEY_TIMEOUT:
                 self._maybe_autosave()
                 continue
+            # After /find: bare n / N jump without inserting (until another key).
+            if key == KEY_NONE and self.find_nav and char in ("n", "N"):
+                if Editor.find_pattern:
+                    if char == "n":
+                        self.find_in_file(
+                            Editor.find_pattern, self.col + 1, self.total_lines
+                        )
+                    else:
+                        self.find_in_file(
+                            Editor.find_pattern, self.col, 0, backwards=True
+                        )
+                    self.row = Editor.height >> 1
+                continue
+            if key == KEY_NONE and self.find_nav:
+                self.find_nav = False
             self.message = ""
             key = self.handle_edit_keys(key, char)           
             if key == KEY_QUIT:

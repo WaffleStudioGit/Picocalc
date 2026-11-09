@@ -168,9 +168,39 @@ class UART:
         return len(self.buf)
 
 
+class Timer:
+    ONE_SHOT = 0
+    PERIODIC = 1
+    registry: list["Timer"] = []
+
+    def __init__(self, id=-1):
+        self.id = id
+        self.period = 0
+        self.mode = self.PERIODIC
+        self.callback = None
+        Timer.registry.append(self)
+
+    def init(self, period=100, mode=PERIODIC, callback=None):
+        self.period = int(period)
+        self.mode = mode
+        self.callback = callback
+
+    def deinit(self):
+        self.callback = None
+
+    def fire(self):
+        if self.callback:
+            self.callback(self)
+
+    @classmethod
+    def reset_registry(cls):
+        cls.registry.clear()
+
+
 def reset_all():
     Pin.reset_registry()
     PWM.reset_registry()
     ADC.reset_registry()
     I2C.registry.clear()
     UART.registry.clear()
+    Timer.reset_registry()

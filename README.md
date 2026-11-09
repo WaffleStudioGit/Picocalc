@@ -26,10 +26,12 @@ browse                 # pick .py to edit (r2 = run #2)
 status                 # about + battery/backlight/RAM/care
 edit /apps/hello_gpio.py
 # editor: Ctrl-S save · Ctrl-R / F5 save+run · autosave every 5 min
+#         Ctrl-F find (/prompt) · n/N next/prev · Ctrl-H replace (opt-in)
 jump                   # open last traceback file:line
+# run / Ctrl-R: Ctrl-C soft-break (check_break() in tight loops)
 from gpio_hw import Servo, i2c, uart
 ```
 
-Burn-in (aggressive): dim ~30s, off ~60s, status chrome mostly hidden after ~1 min, 1-col shift ~2 min. Tune via `sdcard/uf2_care.json` on the SD card.
+Burn-in (aggressive): dim ~30s, off ~60s, status chrome mostly hidden after ~1 min, 1-col shift ~2 min. Battery below `batt_low_mv` (default 3500) dims/off sooner. Tune via `sdcard/uf2_care.json` on the SD card.
 
 Credits: [THIRD_PARTY.md](THIRD_PARTY.md).

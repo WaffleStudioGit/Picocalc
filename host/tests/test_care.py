@@ -88,6 +88,55 @@ class CareTests(unittest.TestCase):
             self.assertTrue(self.care.care.autosave_due(500))
             self.assertFalse(self.care.care.autosave_due(1500))
 
+    def test_battery_low_earlier_dim(self):
+        self.care._DIM_MS = 30000
+        self.care._OFF_MS = 60000
+        self.care._BATT_LOW_MV = 3500
+        self.care._BATT_LOW_DIM_MS = 10000
+        self.care._BATT_LOW_OFF_MS = 25000
+        self.kb.battery_mv = 3400
+
+        def batt():
+            return self.kb.battery_mv
+
+        self.kb.battery = batt
+        dim, off = self.care.effective_idle_ms()
+        self.assertEqual(dim, 10000)
+        self.assertEqual(off, 25000)
+        with mock.patch.object(self.care, "_ticks", return_value=12000):
+            self.care.care.last_input = 0
+            self.care.care.tick()
+            self.assertTrue(self.care.care.dimmed)
+            self.assertEqual(self.kb.level, 4)
+
+    def test_battery_ok_keeps_normal_dim(self):
+        self.care._DIM_MS = 30000
+        self.care._OFF_MS = 60000
+        self.care._BATT_LOW_MV = 3500
+        self.care._BATT_LOW_DIM_MS = 10000
+        self.kb.battery_mv = 3700
+        self.kb.battery = lambda: self.kb.battery_mv
+        dim, off = self.care.effective_idle_ms()
+        self.assertEqual(dim, 30000)
+        self.assertEqual(off, 60000)
+
+    def test_load_config_batt_low(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / "uf2_care.json"
+            path.write_text(
+                json.dumps(
+                    {
+                        "batt_low_mv": 3300,
+                        "batt_low_dim_ms": 5000,
+                        "batt_low_off_ms": 15000,
+                    }
+                )
+            )
+            self.care.load_config(str(path))
+            self.assertEqual(self.care._BATT_LOW_MV, 3300)
+            self.assertEqual(self.care._BATT_LOW_DIM_MS, 5000)
+            self.assertEqual(self.care._BATT_LOW_OFF_MS, 15000)
+
     def test_styles_fg_only(self):
         import default_style
 
